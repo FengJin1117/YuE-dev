@@ -423,7 +423,12 @@ for npy in stage2_result:
     decoded_waveform = decoded_waveform.cpu().squeeze(0)
     decodec_rlt.append(torch.as_tensor(decoded_waveform))
     decodec_rlt = torch.cat(decodec_rlt, dim=-1)
-    save_path = os.path.join(recons_output_dir, os.path.splitext(os.path.basename(npy))[0] + ".mp3")
+
+    # 保存mp3没有encoding参数。只有wav才有。
+    # save_path = os.path.join(recons_output_dir, os.path.splitext(os.path.basename(npy))[0] + ".mp3")
+    # 保存成wav
+    save_path = os.path.join(recons_output_dir, os.path.splitext(os.path.basename(npy))[0] + ".wav")
+
     tracks.append(save_path)
     save_audio(decodec_rlt, save_path, 16000)
 # mix tracks
