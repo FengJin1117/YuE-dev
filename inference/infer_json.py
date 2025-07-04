@@ -94,23 +94,23 @@ def process_json(json_path, output_dir, cuda_idx):
             print(f"❌ 歌曲 {song_id} 生成失败，跳过\n")
             continue
         else:
-            # # 搬运 .wav 文件
-            # mixed_wav = glob.glob(os.path.join(music_dir, "*.wav"))
-            # if mixed_wav:
-            #     target_wav = os.path.join(output_dir, f"{song_id}_mixed.wav")
-            #     shutil.copy(mixed_wav[0], target_wav)
-            #     print(f"✅ 保存混音文件：{target_wav}")
-            # else:
-            #     print(f"⚠️ 未找到混音 WAV 文件：{song_id}")
+            # 搬运 .wav 文件
+            mixed_wav = glob.glob(os.path.join(music_dir, "*.wav"))
+            if mixed_wav:
+                target_wav = os.path.join(output_dir, f"{song_id}_mixed.wav")
+                shutil.copy(mixed_wav[0], target_wav)
+                print(f"✅ 保存混音文件：{target_wav}")
+            else:
+                print(f"⚠️ 未找到混音 WAV 文件：{song_id}")
 
-            # # 搬运 .mp3 文件
-            # vocal_mp3 = os.path.join(music_dir, "vocoder", "stems", "vtrack.mp3")
-            # if os.path.exists(vocal_mp3):
-            #     target_mp3 = os.path.join(output_dir, f"{song_id}_vocal.mp3")
-            #     shutil.copy(vocal_mp3, target_mp3)
-            #     print(f"✅ 保存人声文件：{target_mp3}")
-            # else:
-            #     print(f"⚠️ 未找到人声 MP3 文件：{song_id}")
+            # 搬运 .mp3 文件
+            vocal_mp3 = os.path.join(music_dir, "vocoder", "stems", "vtrack.mp3")
+            if os.path.exists(vocal_mp3):
+                target_mp3 = os.path.join(output_dir, f"{song_id}_vocal.mp3")
+                shutil.copy(vocal_mp3, target_mp3)
+                print(f"✅ 保存人声文件：{target_mp3}")
+            else:
+                print(f"⚠️ 未找到人声 MP3 文件：{song_id}")
             total_success += 1
 
         # 清理 tmp
