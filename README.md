@@ -45,11 +45,8 @@ git clone https://huggingface.co/m-a-p/xcodec_mini_infer
 Now generate music with **YuE** using 🤗 Transformers. Make sure your step [1](#1-install-environment-and-dependencies) and [2](#2-download-the-infer-code-and-tokenizer) are properly set up. 
 
 Note:
-- Set `--run_n_segments` to the number of lyric sections if you want to generate a full song. Additionally, you can increase `--stage2_batch_size` based on your available GPU memory.
-
-- You may customize the prompt in `genre.txt` and `lyrics.txt`. See prompt engineering guide [here](#prompt-engineering-guide).
-
-- You can increase `--stage2_batch_size` to speed up the inference, but be careful for OOM.
+- Set `--run_n_segments` to the number of lyric sections if you want to generate a full song. 
+- You may customize the prompt in `genre.txt` and `lyrics.txt`. 
 
 - LM ckpts will be automatically downloaded from huggingface. 
 
