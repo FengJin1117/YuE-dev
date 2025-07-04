@@ -70,18 +70,6 @@ python infer.py \
     --repetition_penalty 1.1
 ```
 
-We also support music in-context-learning (provide a reference song), there are 2 types: single-track (mix/vocal/instrumental) and dual-track. 
-
-Note: 
-- ICL requires a different ckpt, e.g. `m-a-p/YuE-s1-7B-anneal-en-icl`.
-
-- Music ICL generally requires a 30s audio segment. The model will write new songs with similar style of the provided audio, and may improve musicality.
-
-- Dual-track ICL works better in general, requiring both vocal and instrumental tracks.
-
-- For single-track ICL, you can provide a mix, vocal, or instrumental track.
-
-- You can separate the vocal and instrumental tracks using [python-audio-separator](https://github.com/nomadkaraoke/python-audio-separator) or [Ultimate Vocal Remover GUI](https://github.com/Anjok07/ultimatevocalremovergui).
 
 ### 4. Batch inference
 
