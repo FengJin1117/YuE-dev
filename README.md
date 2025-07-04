@@ -8,14 +8,9 @@
 
 <br>
 
-## 🐧 Linux/WSL Users Quickstart
+## 🐧 Linux Quickstart
 For a **quick start**, watch this **video tutorial** by Fahd: [Watch here](https://www.youtube.com/watch?v=RSMNH9GitbA).  
 If you're new to **machine learning** or the **command line**, we highly recommend watching this video first.  
-
-To use a **GUI/Gradio** interface, check out:  
-- [YuE-exllamav2-UI](https://github.com/WrongProtocol/YuE-exllamav2-UI)
-- [YuEGP](https://github.com/deepbeepmeep/YuEGP)
-- [YuE-Interface](https://github.com/alisson-anjos/YuE-Interface)  
 
 ### 1. Install environment and dependencies
 Make sure properly install flash attention 2 to reduce VRAM usage. 
@@ -88,56 +83,7 @@ Note:
 
 - You can separate the vocal and instrumental tracks using [python-audio-separator](https://github.com/nomadkaraoke/python-audio-separator) or [Ultimate Vocal Remover GUI](https://github.com/Anjok07/ultimatevocalremovergui).
 
-```bash
-# This is the dual-track ICL mode.
-# To turn on dual-track mode, enable `--use_dual_tracks_prompt`
-# and provide `--vocal_track_prompt_path`, `--instrumental_track_prompt_path`, 
-# `--prompt_start_time`, and `--prompt_end_time`
-# The ref audio is taken from GTZAN test set.
-cd YuE/inference/
-python infer.py \
-    --cuda_idx 0 \
-    --stage1_model m-a-p/YuE-s1-7B-anneal-en-icl \
-    --stage2_model m-a-p/YuE-s2-1B-general \
-    --genre_txt ../prompt_egs/genre.txt \
-    --lyrics_txt ../prompt_egs/lyrics.txt \
-    --run_n_segments 2 \
-    --stage2_batch_size 4 \
-    --output_dir ../output \
-    --max_new_tokens 3000 \
-    --repetition_penalty 1.1 \
-    --use_dual_tracks_prompt \
-    --vocal_track_prompt_path ../prompt_egs/pop.00001.Vocals.mp3 \
-    --instrumental_track_prompt_path ../prompt_egs/pop.00001.Instrumental.mp3 \
-    --prompt_start_time 0 \
-    --prompt_end_time 30 
-```
-
-```bash
-# This is the single-track (mix/vocal/instrumental) ICL mode.
-# To turn on single-track ICL, enable `--use_audio_prompt`, 
-# and provide `--audio_prompt_path` , `--prompt_start_time`, and `--prompt_end_time`. 
-# The ref audio is taken from GTZAN test set.
-cd YuE/inference/
-python infer.py \
-    --cuda_idx 0 \
-    --stage1_model m-a-p/YuE-s1-7B-anneal-en-icl \
-    --stage2_model m-a-p/YuE-s2-1B-general \
-    --genre_txt ../prompt_egs/genre.txt \
-    --lyrics_txt ../prompt_egs/lyrics.txt \
-    --run_n_segments 2 \
-    --stage2_batch_size 4 \
-    --output_dir ../output \
-    --max_new_tokens 3000 \
-    --repetition_penalty 1.1 \
-    --use_audio_prompt \
-    --audio_prompt_path ../prompt_egs/pop.00001.mp3 \
-    --prompt_start_time 0 \
-    --prompt_end_time 30 
-```
----
-
-5. For music continuation, see [YuE-extend by Mozer](https://github.com/Mozer/YuE-extend). Also supports Colab.
+### 4. Batch inference
 
 ---
 
