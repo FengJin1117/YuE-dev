@@ -11,7 +11,7 @@
 
 This is the batch music generation code for **YuE**.
 
-### 🔧 QuickStart Changes
+## 🔧 QuickStart Changes
 
 - Steps 1–2 (environment setup) are the same as in the [YuE repo](https://github.com/multimodal-art-projection/YuE).
 - Step 3 has been replaced with a Chinese example.
@@ -83,6 +83,7 @@ Note:
 - `--json_path`: Path to the input JSON file containing lyrics and genre prompt
 
 ```
+cd YuE/inference/
 python run_infer.py \
     --json_path data/blues.json \
     --cuda_idx 0
