@@ -5,7 +5,7 @@ import os
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run infer_json.py with nohup")
     parser.add_argument("--json_path", type=str, required=True, help="Path to the input JSON file")
-    parser.add_argument("--output_dir", type=str, default="../output", help="Directory to save output")
+    parser.add_argument("--output_dir", type=str, default="../output_batch", help="Directory to save output")
     parser.add_argument("--cuda_idx", type=str, default="0", help="CUDA device index")
     parser.add_argument("--log_path", type=str, default="../infer_parallel.log", help="Path to log file")
     parser.add_argument("--run_dir", type=str, default=".", help="Directory to run the command from")
