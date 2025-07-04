@@ -8,6 +8,17 @@
 
 <br>
 
+
+This is the batch music generation code for **YuE**.
+
+### 🔧 QuickStart Changes
+
+- Steps 1–2 (environment setup) are the same as in the [YuE repo](https://github.com/multimodal-art-projection/YuE).
+- Step 3 has been replaced with a Chinese example.
+- Step 4 supports batch generation by specifying a JSON file and target GPU.
+  
+Here are the detailed steps——
+
 ## 🐧 Linux Quickstart
 For a **quick start**, watch this **video tutorial** by Fahd: [Watch here](https://www.youtube.com/watch?v=RSMNH9GitbA).  
 If you're new to **machine learning** or the **command line**, we highly recommend watching this video first.  
@@ -56,12 +67,12 @@ Note:
 cd YuE/inference/
 python infer.py \
     --cuda_idx 0 \
-    --stage1_model m-a-p/YuE-s1-7B-anneal-en-cot \
+    --stage1_model m-a-p/YuE-s1-7B-anneal-zh-cot \
     --stage2_model m-a-p/YuE-s2-1B-general \
     --genre_txt ../prompt_egs/genre.txt \
     --lyrics_txt ../prompt_egs/lyrics.txt \
     --run_n_segments 2 \
-    --stage2_batch_size 4 \
+    --stage2_batch_size 64 \
     --output_dir ../output \
     --max_new_tokens 3000 \
     --repetition_penalty 1.1
@@ -69,6 +80,9 @@ python infer.py \
 
 
 ### 4. Batch inference
+
+```
+```
 
 ---
 
