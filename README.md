@@ -58,9 +58,7 @@ Now generate music with **YuE** using 🤗 Transformers. Make sure your step [1]
 Note:
 - Set `--run_n_segments` to the number of lyric sections if you want to generate a full song. 
 - You may customize the prompt in `genre.txt` and `lyrics.txt`. 
-
 - LM ckpts will be automatically downloaded from huggingface. 
-
 
 ```bash
 # This is the CoT mode.
@@ -81,7 +79,13 @@ python infer.py \
 
 ### 4. Batch inference
 
+Note:
+- `--json_path`: Path to the input JSON file containing lyrics and genre prompt
+
 ```
+python run_infer.py \
+    --json_path data/blues.json \
+    --cuda_idx 0
 ```
 
 ---
