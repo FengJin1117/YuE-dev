@@ -10,18 +10,19 @@ import time
 from tqdm import tqdm
 
 # 检查是否生成了音乐
-def song_exists(song_dir):
-    mixed_path = os.path.join(song_dir, "vocoder") 
-    if os.path.exists(mixed_path): 
-        return True 
-    else: 
+
+def song_exists(song_id, output_dir):
+    music_path = os.path.join(output_dir, song_id+"_mixed.wav")
+    vocal_path = os.path.join(output_dir, song_id+"_vocal.mp3")
+    if os.path.exists(music_path) or os.path.exists(vocal_path):
+        return True
+    else:
         return False
 
 def yue_infer(song_dir, cuda_idx, silent=False): 
     # return True
     genre_prompt_path = os.path.join(song_dir, "genre_prompt.txt") 
     lyrics_path = os.path.join(song_dir, "lyrics.txt") 
-    output_dir = song_dir
     # print("genre prompt:", genre_prompt_path)
     # print("lyrics:", lyrics_path)
     # print("output dir:", output_dir)
@@ -34,8 +35,8 @@ def yue_infer(song_dir, cuda_idx, silent=False):
         "--genre_txt", genre_prompt_path,
         "--lyrics_txt", lyrics_path,
         "--run_n_segments", "2",
-        "--stage2_batch_size", "64",
-        "--output_dir", output_dir,
+        "--stage2_batch_size", "128",
+        "--output_dir", song_dir,
         "--max_new_tokens", "3000",
         "--repetition_penalty", "1.1"
     ]
@@ -56,11 +57,11 @@ def yue_infer(song_dir, cuda_idx, silent=False):
     end_time = time.time()
     print(f"Execution Time: {(end_time - start_time) / 60:.2f} minutes")
     
-    if song_exists(song_dir): 
-        print(f"Succeed") 
+    if os.path.exists(os.path.join(song_dir, "mixed.wav")): 
+        # print(f"Succeed") 
         return True 
     else: 
-        print(f"Failed") 
+        # print(f"Failed") 
         return False
 
 def process_json(json_path, output_dir, cuda_idx):
@@ -74,11 +75,16 @@ def process_json(json_path, output_dir, cuda_idx):
     for line in tqdm(lines, desc=f"Generate music from {json_path}"):
         data = json.loads(line.strip())
         song_id = data["ID"]
-        genre_prompt = data["genre prompt"]
-        lyrics = data["lyrics"]
+        genre_prompt = data["Genre Prompt"]
+        lyrics = data["Lyrics"]
+
+        # 检查是否该首歌曲是否已经生产
+        if song_exists(song_id, output_dir):
+            print(f"\n✅ 歌曲已生成：{song_id}")
+            continue
 
         # 按照song_id创建歌曲输出文件夹
-        music_dir = song_id
+        music_dir = os.path.join(song_id)
         os.makedirs(music_dir, exist_ok=True)
 
         # 写入文本文件
@@ -88,11 +94,12 @@ def process_json(json_path, output_dir, cuda_idx):
             f.write(lyrics)
 
         print(f"\n🔄 开始生成歌曲：{song_id}")
-        success = yue_infer(song_dir=music_dir, cuda_idx=cuda_idx, silent=True)
+        # success = yue_infer(song_dir=music_dir, cuda_idx=cuda_idx, silent=True)
+        success = yue_infer(song_dir=music_dir, cuda_idx=cuda_idx)
+
 
         if not success:
             print(f"❌ 歌曲 {song_id} 生成失败，跳过\n")
-            continue
         else:
             # 搬运 .wav 文件
             mixed_wav = glob.glob(os.path.join(music_dir, "*.wav"))
@@ -114,8 +121,8 @@ def process_json(json_path, output_dir, cuda_idx):
             total_success += 1
 
         # 清理 tmp
-        shutil.rmtree(music_dir)
-        print(f"🧹 清理临时文件夹 {music_dir} 完成\n")
+        # shutil.rmtree(music_dir)
+        # print(f"🧹 清理临时文件夹 {music_dir} 完成\n")
         
     print(f"Total songs in JSON: {total_count}")
     print(f"Successfully generated songs: {total_success}")
@@ -123,8 +130,12 @@ def process_json(json_path, output_dir, cuda_idx):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--json_path", type=str, required=True, help="输入JSON路径")
-    parser.add_argument("--output_dir", type=str, default="./output", help="输出路径")
+    parser.add_argument("--output_dir", type=str, default="../output_batch", help="输出路径")
     parser.add_argument("--cuda_idx", type=int, default=0, help="使用的GPU编号")
     args = parser.parse_args()
+
+    print(f"🚀 当前进程 PID: {os.getpid()}")
+    if not os.path.exists("../logs"):
+        os.makedirs("../logs", exist_ok=True)
 
     process_json(args.json_path, args.output_dir, args.cuda_idx)

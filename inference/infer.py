@@ -150,115 +150,128 @@ full_lyrics = "\n".join(lyrics)
 prompt_texts = [f"Generate music from the given lyrics segment by segment.\n[Genre] {genres}\n{full_lyrics}"]
 prompt_texts += lyrics
 
+# 阶段 1：文本到音频编码生成
+# 保存 vocal 和 instrumental 的编码序列，路径示例：stage1_output_dir/*.npy
 
-random_id = uuid.uuid4()
-output_seq = None
-# Here is suggested decoding config
-top_p = 0.93
-temperature = 1.0
-repetition_penalty = args.repetition_penalty
-# special tokens
-start_of_segment = mmtokenizer.tokenize('[start_of_segment]')
-end_of_segment = mmtokenizer.tokenize('[end_of_segment]')
-# Format text prompt
-run_n_segments = min(args.run_n_segments+1, len(lyrics))
-for i, p in enumerate(tqdm(prompt_texts[:run_n_segments], desc="Stage1 inference...")):
-    section_text = p.replace('[start_of_segment]', '').replace('[end_of_segment]', '')
-    guidance_scale = 1.5 if i <=1 else 1.2
-    if i==0:
-        continue
-    if i==1:
-        if args.use_dual_tracks_prompt or args.use_audio_prompt:
-            if args.use_dual_tracks_prompt:
-                vocals_ids = load_audio_mono(args.vocal_track_prompt_path)
-                instrumental_ids = load_audio_mono(args.instrumental_track_prompt_path)
-                vocals_ids = encode_audio(codec_model, vocals_ids, device, target_bw=0.5)
-                instrumental_ids = encode_audio(codec_model, instrumental_ids, device, target_bw=0.5)
-                vocals_ids = codectool.npy2ids(vocals_ids[0])
-                instrumental_ids = codectool.npy2ids(instrumental_ids[0])
-                ids_segment_interleaved = rearrange([np.array(vocals_ids), np.array(instrumental_ids)], 'b n -> (n b)')
-                audio_prompt_codec = ids_segment_interleaved[int(args.prompt_start_time*50*2): int(args.prompt_end_time*50*2)]
-                audio_prompt_codec = audio_prompt_codec.tolist()
-            elif args.use_audio_prompt:
-                audio_prompt = load_audio_mono(args.audio_prompt_path)
-                raw_codes = encode_audio(codec_model, audio_prompt, device, target_bw=0.5)
-                # Format audio prompt
-                code_ids = codectool.npy2ids(raw_codes[0])
-                audio_prompt_codec = code_ids[int(args.prompt_start_time *50): int(args.prompt_end_time *50)] # 50 is tps of xcodec
-            audio_prompt_codec_ids = [mmtokenizer.soa] + codectool.sep_ids + audio_prompt_codec + [mmtokenizer.eoa]
-            sentence_ids = mmtokenizer.tokenize("[start_of_reference]") +  audio_prompt_codec_ids + mmtokenizer.tokenize("[end_of_reference]")
-            head_id = mmtokenizer.tokenize(prompt_texts[0]) + sentence_ids
+vocal_save_path = os.path.join(stage1_output_dir, 'vtrack.npy')
+inst_save_path = os.path.join(stage1_output_dir, 'itrack.npy')
+
+if os.path.exists(vocal_save_path) and os.path.exists(inst_save_path):
+    # 文件存在，直接添加
+    stage1_output_set.append(vocal_save_path)
+    stage1_output_set.append(inst_save_path)
+    print("Stage 1 Finishd")
+else:
+    output_seq = None
+    # Here is suggested decoding config
+    top_p = 0.93
+    temperature = 1.0
+    repetition_penalty = args.repetition_penalty
+    # special tokens
+    start_of_segment = mmtokenizer.tokenize('[start_of_segment]')
+    end_of_segment = mmtokenizer.tokenize('[end_of_segment]')
+    # Format text prompt
+    run_n_segments = min(args.run_n_segments+1, len(lyrics))
+    for i, p in enumerate(tqdm(prompt_texts[:run_n_segments], desc="Stage1 inference...")):
+        section_text = p.replace('[start_of_segment]', '').replace('[end_of_segment]', '')
+        guidance_scale = 1.5 if i <=1 else 1.2
+        if i==0:
+            continue
+        if i==1:
+            if args.use_dual_tracks_prompt or args.use_audio_prompt:
+                if args.use_dual_tracks_prompt:
+                    vocals_ids = load_audio_mono(args.vocal_track_prompt_path)
+                    instrumental_ids = load_audio_mono(args.instrumental_track_prompt_path)
+                    vocals_ids = encode_audio(codec_model, vocals_ids, device, target_bw=0.5)
+                    instrumental_ids = encode_audio(codec_model, instrumental_ids, device, target_bw=0.5)
+                    vocals_ids = codectool.npy2ids(vocals_ids[0])
+                    instrumental_ids = codectool.npy2ids(instrumental_ids[0])
+                    ids_segment_interleaved = rearrange([np.array(vocals_ids), np.array(instrumental_ids)], 'b n -> (n b)')
+                    audio_prompt_codec = ids_segment_interleaved[int(args.prompt_start_time*50*2): int(args.prompt_end_time*50*2)]
+                    audio_prompt_codec = audio_prompt_codec.tolist()
+                elif args.use_audio_prompt:
+                    audio_prompt = load_audio_mono(args.audio_prompt_path)
+                    raw_codes = encode_audio(codec_model, audio_prompt, device, target_bw=0.5)
+                    # Format audio prompt
+                    code_ids = codectool.npy2ids(raw_codes[0])
+                    audio_prompt_codec = code_ids[int(args.prompt_start_time *50): int(args.prompt_end_time *50)] # 50 is tps of xcodec
+                audio_prompt_codec_ids = [mmtokenizer.soa] + codectool.sep_ids + audio_prompt_codec + [mmtokenizer.eoa]
+                sentence_ids = mmtokenizer.tokenize("[start_of_reference]") +  audio_prompt_codec_ids + mmtokenizer.tokenize("[end_of_reference]")
+                head_id = mmtokenizer.tokenize(prompt_texts[0]) + sentence_ids
+            else:
+                head_id = mmtokenizer.tokenize(prompt_texts[0])
+            prompt_ids = head_id + start_of_segment + mmtokenizer.tokenize(section_text) + [mmtokenizer.soa] + codectool.sep_ids
         else:
-            head_id = mmtokenizer.tokenize(prompt_texts[0])
-        prompt_ids = head_id + start_of_segment + mmtokenizer.tokenize(section_text) + [mmtokenizer.soa] + codectool.sep_ids
-    else:
-        prompt_ids = end_of_segment + start_of_segment + mmtokenizer.tokenize(section_text) + [mmtokenizer.soa] + codectool.sep_ids
+            prompt_ids = end_of_segment + start_of_segment + mmtokenizer.tokenize(section_text) + [mmtokenizer.soa] + codectool.sep_ids
 
-    prompt_ids = torch.as_tensor(prompt_ids).unsqueeze(0).to(device) 
-    input_ids = torch.cat([raw_output, prompt_ids], dim=1) if i > 1 else prompt_ids
-    # Use window slicing in case output sequence exceeds the context of model
-    max_context = 16384-max_new_tokens-1
-    if input_ids.shape[-1] > max_context:
-        print(f'Section {i}: output length {input_ids.shape[-1]} exceeding context length {max_context}, now using the last {max_context} tokens.')
-        input_ids = input_ids[:, -(max_context):]
-    with torch.no_grad():
-        output_seq = model.generate(
-            input_ids=input_ids, 
-            max_new_tokens=max_new_tokens, 
-            min_new_tokens=100, 
-            do_sample=True, 
-            top_p=top_p,
-            temperature=temperature, 
-            repetition_penalty=repetition_penalty, 
-            eos_token_id=mmtokenizer.eoa,
-            pad_token_id=mmtokenizer.eoa,
-            logits_processor=LogitsProcessorList([BlockTokenRangeProcessor(0, 32002), BlockTokenRangeProcessor(32016, 32016)]),
-            guidance_scale=guidance_scale,
-            )
-        if output_seq[0][-1].item() != mmtokenizer.eoa:
-            tensor_eoa = torch.as_tensor([[mmtokenizer.eoa]]).to(model.device)
-            output_seq = torch.cat((output_seq, tensor_eoa), dim=1)
-    if i > 1:
-        raw_output = torch.cat([raw_output, prompt_ids, output_seq[:, input_ids.shape[-1]:]], dim=1)
-    else:
-        raw_output = output_seq
+        prompt_ids = torch.as_tensor(prompt_ids).unsqueeze(0).to(device) 
+        input_ids = torch.cat([raw_output, prompt_ids], dim=1) if i > 1 else prompt_ids
+        # Use window slicing in case output sequence exceeds the context of model
+        max_context = 16384-max_new_tokens-1
+        if input_ids.shape[-1] > max_context:
+            print(f'Section {i}: output length {input_ids.shape[-1]} exceeding context length {max_context}, now using the last {max_context} tokens.')
+            input_ids = input_ids[:, -(max_context):]
+        with torch.no_grad():
+            output_seq = model.generate(
+                input_ids=input_ids, 
+                max_new_tokens=max_new_tokens, 
+                min_new_tokens=100, 
+                do_sample=True, 
+                top_p=top_p,
+                temperature=temperature, 
+                repetition_penalty=repetition_penalty, 
+                eos_token_id=mmtokenizer.eoa,
+                pad_token_id=mmtokenizer.eoa,
+                logits_processor=LogitsProcessorList([BlockTokenRangeProcessor(0, 32002), BlockTokenRangeProcessor(32016, 32016)]),
+                guidance_scale=guidance_scale,
+                )
+            if output_seq[0][-1].item() != mmtokenizer.eoa:
+                tensor_eoa = torch.as_tensor([[mmtokenizer.eoa]]).to(model.device)
+                output_seq = torch.cat((output_seq, tensor_eoa), dim=1)
+        if i > 1:
+            raw_output = torch.cat([raw_output, prompt_ids, output_seq[:, input_ids.shape[-1]:]], dim=1)
+        else:
+            raw_output = output_seq
 
-# save raw output and check sanity
-ids = raw_output[0].cpu().numpy()
-soa_idx = np.where(ids == mmtokenizer.soa)[0].tolist()
-eoa_idx = np.where(ids == mmtokenizer.eoa)[0].tolist()
-if len(soa_idx)!=len(eoa_idx):
-    raise ValueError(f'invalid pairs of soa and eoa, Num of soa: {len(soa_idx)}, Num of eoa: {len(eoa_idx)}')
+    # save raw output and check sanity
+    ids = raw_output[0].cpu().numpy()
+    soa_idx = np.where(ids == mmtokenizer.soa)[0].tolist()
+    eoa_idx = np.where(ids == mmtokenizer.eoa)[0].tolist()
+    if len(soa_idx)!=len(eoa_idx):
+        raise ValueError(f'invalid pairs of soa and eoa, Num of soa: {len(soa_idx)}, Num of eoa: {len(eoa_idx)}')
 
-vocals = []
-instrumentals = []
-range_begin = 1 if args.use_audio_prompt or args.use_dual_tracks_prompt else 0
-for i in range(range_begin, len(soa_idx)):
-    codec_ids = ids[soa_idx[i]+1:eoa_idx[i]]
-    if codec_ids[0] == 32016:
-        codec_ids = codec_ids[1:]
-    codec_ids = codec_ids[:2 * (codec_ids.shape[0] // 2)]
-    vocals_ids = codectool.ids2npy(rearrange(codec_ids,"(n b) -> b n", b=2)[0])
-    vocals.append(vocals_ids)
-    instrumentals_ids = codectool.ids2npy(rearrange(codec_ids,"(n b) -> b n", b=2)[1])
-    instrumentals.append(instrumentals_ids)
-vocals = np.concatenate(vocals, axis=1)
-instrumentals = np.concatenate(instrumentals, axis=1)
-vocal_save_path = os.path.join(stage1_output_dir, f"{genres.replace(' ', '-')}_tp{top_p}_T{temperature}_rp{repetition_penalty}_maxtk{max_new_tokens}_{random_id}_vtrack".replace('.', '@')+'.npy')
-inst_save_path = os.path.join(stage1_output_dir, f"{genres.replace(' ', '-')}_tp{top_p}_T{temperature}_rp{repetition_penalty}_maxtk{max_new_tokens}_{random_id}_itrack".replace('.', '@')+'.npy')
-np.save(vocal_save_path, vocals)
-np.save(inst_save_path, instrumentals)
-stage1_output_set.append(vocal_save_path)
-stage1_output_set.append(inst_save_path)
+    vocals = []
+    instrumentals = []
+    range_begin = 1 if args.use_audio_prompt or args.use_dual_tracks_prompt else 0
+    for i in range(range_begin, len(soa_idx)):
+        codec_ids = ids[soa_idx[i]+1:eoa_idx[i]]
+        if codec_ids[0] == 32016:
+            codec_ids = codec_ids[1:]
+        codec_ids = codec_ids[:2 * (codec_ids.shape[0] // 2)]
+        vocals_ids = codectool.ids2npy(rearrange(codec_ids,"(n b) -> b n", b=2)[0])
+        vocals.append(vocals_ids)
+        instrumentals_ids = codectool.ids2npy(rearrange(codec_ids,"(n b) -> b n", b=2)[1])
+        instrumentals.append(instrumentals_ids)
+    vocals = np.concatenate(vocals, axis=1)
+    instrumentals = np.concatenate(instrumentals, axis=1)
 
+    np.save(vocal_save_path, vocals)
+    np.save(inst_save_path, instrumentals)
+    stage1_output_set.append(vocal_save_path)
+    stage1_output_set.append(inst_save_path)
 
-# offload model
-if not args.disable_offload_model:
-    model.cpu()
-    del model
-    torch.cuda.empty_cache()
+    # offload model
+    if not args.disable_offload_model:
+        model.cpu()
+        del model
+        torch.cuda.empty_cache()
 
+print("stage1_output_set:", stage1_output_set)
+
+# 阶段 2：编码增强补全（Stage2）
+# 用 YuE S2 模型，对 Stage1 输出的 codec tokens 进行细节补全
 print("Stage 2 inference...")
+# 加载stage2的模型
 model_stage2 = AutoModelForCausalLM.from_pretrained(
     stage2_model, 
     torch_dtype=torch.bfloat16,
@@ -342,10 +355,12 @@ def stage2_generate(model, prompt, batch_size=16):
 def stage2_inference(model, stage1_output_set, stage2_output_dir, batch_size=4):
     stage2_result = []
     for i in tqdm(range(len(stage1_output_set))):
+        # 换成stage2的路径
         output_filename = os.path.join(stage2_output_dir, os.path.basename(stage1_output_set[i]))
         
         if os.path.exists(output_filename):
             print(f'{output_filename} stage2 has done.')
+            stage2_result.append(output_filename)
             continue
         
         # Load the prompt
@@ -399,8 +414,12 @@ def stage2_inference(model, stage1_output_set, stage2_output_dir, batch_size=4):
     return stage2_result
 
 stage2_result = stage2_inference(model_stage2, stage1_output_set, stage2_output_dir, batch_size=args.stage2_batch_size)
-print(stage2_result)
+print("stage2_result:", stage2_result)
 print('Stage 2 DONE.\n')
+
+# 阶段 3：音频解码（Reconstruction）
+# 得到初步可听的 vocal 和 instrumental .wav 文件
+# 输出在 output/recons/*.wav 中
 # convert audio tokens to audio
 def save_audio(wav: torch.Tensor, path, sample_rate: int, rescale: bool = False):
     folder_path = os.path.dirname(path)
@@ -423,20 +442,25 @@ for npy in stage2_result:
     decoded_waveform = decoded_waveform.cpu().squeeze(0)
     decodec_rlt.append(torch.as_tensor(decoded_waveform))
     decodec_rlt = torch.cat(decodec_rlt, dim=-1)
-    save_path = os.path.join(recons_output_dir, os.path.splitext(os.path.basename(npy))[0] + ".mp3")
+
+    # mp3改成wav
+    # save_path = os.path.join(recons_output_dir, os.path.splitext(os.path.basename(npy))[0] + ".mp3")
+    save_path = os.path.join(recons_output_dir, os.path.splitext(os.path.basename(npy))[0] + ".wav")
+
     tracks.append(save_path)
     save_audio(decodec_rlt, save_path, 16000)
 # mix tracks
 for inst_path in tracks:
     try:
         if (inst_path.endswith('.wav') or inst_path.endswith('.mp3')) \
-            and '_itrack' in inst_path:
+            and 'itrack' in inst_path:
             # find pair
-            vocal_path = inst_path.replace('_itrack', '_vtrack')
+            vocal_path = inst_path.replace('itrack', 'vtrack')
             if not os.path.exists(vocal_path):
                 continue
             # mix
-            recons_mix = os.path.join(recons_mix_dir, os.path.basename(inst_path).replace('_itrack', '_mixed'))
+            recons_mix = os.path.join(recons_mix_dir, os.path.basename(inst_path).replace('itrack', 'mixed'))
+            print("recons_mix:", recons_mix)
             vocal_stem, sr = sf.read(inst_path)
             instrumental_stem, _ = sf.read(vocal_path)
             mix_stem = (vocal_stem + instrumental_stem) / 1
@@ -452,7 +476,7 @@ vocoder_mix_dir = os.path.join(vocoder_output_dir, 'mix')
 os.makedirs(vocoder_mix_dir, exist_ok=True)
 os.makedirs(vocoder_stems_dir, exist_ok=True)
 for npy in stage2_result:
-    if '_itrack' in npy:
+    if 'itrack' in npy:
         # Process instrumental
         instrumental_output = process_audio(
             npy,
@@ -486,6 +510,6 @@ except RuntimeError as e:
 replace_low_freq_with_energy_matched(
     a_file=recons_mix,     # 16kHz
     b_file=vocoder_mix,     # 48kHz
-    c_file=os.path.join(args.output_dir, os.path.basename(recons_mix)),
+    c_file=os.path.join(args.output_dir, os.path.basename(recons_mix)), # 最终的混音文件（recons和vocoder的结果混合）
     cutoff_freq=5500.0
 )
