@@ -11,7 +11,7 @@
 
 This is the batch music generation code for **YuE**.
 
-### 🔧 QuickStart Changes
+## 🔧 QuickStart Changes
 
 - Steps 1–2 (environment setup) are the same as in the [YuE repo](https://github.com/multimodal-art-projection/YuE).
 - Step 3 has been replaced with a Chinese example.
@@ -58,9 +58,7 @@ Now generate music with **YuE** using 🤗 Transformers. Make sure your step [1]
 Note:
 - Set `--run_n_segments` to the number of lyric sections if you want to generate a full song. 
 - You may customize the prompt in `genre.txt` and `lyrics.txt`. 
-
 - LM ckpts will be automatically downloaded from huggingface. 
-
 
 ```bash
 # This is the CoT mode.
@@ -81,7 +79,28 @@ python infer.py \
 
 ### 4. Batch inference
 
+Note:
+- `--json_path`: Path to the input JSON file containing lyrics and genre prompt
+- The result are saved to `YuE-dev/output_batch` by default. You can customize the location using `--output_dir`.
+- The log is written to `YuE-dev/infer_parallel.log` by default. You can change this using `--log_path`.
+  
+The test command is as follows:
 ```
+# Run inference on a single song.
+cd YuE/inference/
+nohup python -u infer_json.py \
+        --json_path ../lyrics/lyrics_test.jsonl \
+        --cuda_idx 0 \
+        > ../logs/lyrics_test.log 2>&1 &
+```
+`10000_lyrics.jsonl` contains a total of 10,000 lyrics.
+It is recommended to split `10000_lyrics.jsonl` into smaller chunks and distribute the workload across multiple GPUs for parallel processing.
+```
+cd YuE/inference/
+nohup python -u infer_json.py \
+        --json_path ../lyrics/10000_lyrics.jsonl \
+        --cuda_idx 0 \
+        > ../logs/10000_lyrics.log 2>&1 &
 ```
 
 ---
