@@ -121,8 +121,8 @@ def process_json(json_path, output_dir, cuda_idx):
             total_success += 1
 
         # 清理 tmp
-        # shutil.rmtree(music_dir)
-        # print(f"🧹 清理临时文件夹 {music_dir} 完成\n")
+        shutil.rmtree(music_dir)
+        print(f"🧹 清理临时文件夹 {music_dir} 完成\n")
         
     print(f"Total songs in JSON: {total_count}")
     print(f"Successfully generated songs: {total_success}")
