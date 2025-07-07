@@ -86,9 +86,10 @@ Note:
 
 ```
 cd YuE/inference/
-python run_infer.py \
-    --json_path data/blues.json \
-    --cuda_idx 0
+nohup python -u infer_json.py \
+        --json_path ../lyrics/lyrics_test.jsonl \
+        --cuda_idx 0 \
+        > ../logs/lyrics_test.log 2>&1 &
 ```
 
 ---
