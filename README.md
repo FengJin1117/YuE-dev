@@ -85,11 +85,21 @@ Note:
 - The log is written to `YuE-dev/infer_parallel.log` by default. You can change this using `--log_path`.
 
 ```
+# Run inference on a single song.
 cd YuE/inference/
 nohup python -u infer_json.py \
         --json_path ../lyrics/lyrics_test.jsonl \
         --cuda_idx 0 \
         > ../logs/lyrics_test.log 2>&1 &
+```
+`10000_lyrics.jsonl` contains a total of 10,000 lyrics.
+It is recommended to split `10000_lyrics.jsonl` into smaller chunks and distribute the workload across multiple GPUs for parallel processing.
+```
+cd YuE/inference/
+nohup python -u infer_json.py \
+        --json_path ../lyrics/10000_lyrics.jsonl \
+        --cuda_idx 0 \
+        > ../logs/10000_lyrics.log 2>&1 &
 ```
 
 ---
