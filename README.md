@@ -82,7 +82,6 @@ python infer.py \
 Note:
 - `--json_path`: Path to the input JSON file containing lyrics and genre prompt
 - The result are saved to `YuE-dev/output_batch` by default. You can customize the location using `--output_dir`.
-- The log is written to `YuE-dev/infer_parallel.log` by default. You can change this using `--log_path`.
   
 The test command is as follows:
 ```
