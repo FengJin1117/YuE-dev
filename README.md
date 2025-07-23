@@ -48,7 +48,7 @@ sudo apt install git-lfs
 git lfs install
 git clone https://github.com/multimodal-art-projection/YuE.git
 
-cd YuE/inference/
+cd YuE-dev/inference/
 git clone https://huggingface.co/m-a-p/xcodec_mini_infer
 ```
 
@@ -62,7 +62,7 @@ Note:
 
 ```bash
 # This is the CoT mode.
-cd YuE/inference/
+cd YuE-dev/inference/
 python infer.py \
     --cuda_idx 0 \
     --stage1_model m-a-p/YuE-s1-7B-anneal-zh-cot \
@@ -82,12 +82,11 @@ python infer.py \
 Note:
 - `--json_path`: Path to the input JSON file containing lyrics and genre prompt
 - The result are saved to `YuE-dev/output_batch` by default. You can customize the location using `--output_dir`.
-- The log is written to `YuE-dev/infer_parallel.log` by default. You can change this using `--log_path`.
   
 The test command is as follows:
 ```
 # Run inference on a single song.
-cd YuE/inference/
+cd YuE-dev/inference/
 nohup python -u infer_json.py \
         --json_path ../lyrics/lyrics_test.jsonl \
         --cuda_idx 0 \
@@ -96,7 +95,7 @@ nohup python -u infer_json.py \
 `10000_lyrics.jsonl` contains a total of 10,000 lyrics.
 It is recommended to split `10000_lyrics.jsonl` into smaller chunks and distribute the workload across multiple GPUs for parallel processing.
 ```
-cd YuE/inference/
+cd YuE-dev/inference/
 nohup python -u infer_json.py \
         --json_path ../lyrics/10000_lyrics.jsonl \
         --cuda_idx 0 \
