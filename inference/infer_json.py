@@ -118,6 +118,14 @@ def process_json(json_path, output_dir, cuda_idx):
                 print(f"✅ 保存人声文件：{target_mp3}")
             else:
                 print(f"⚠️ 未找到人声 MP3 文件：{song_id}")
+
+            instrument_mp3 = os.path.join(music_dir, "vocoder", "stems", "itrack.mp3")
+            if os.path.exists(instrument_mp3):
+                target_mp3 = os.path.join(output_dir, f"{song_id}_instrument.mp3")
+                shutil.copy(instrument_mp3, target_mp3)
+                print(f"✅ 保存伴奏文件：{target_mp3}")
+            else:
+                print(f"⚠️ 未找到伴奏 MP3 文件：{song_id}")
             total_success += 1
 
         # 清理 tmp
